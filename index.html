@@ -15,7 +15,7 @@
     <nav class="nav">
       <ul>
         <li><a href="#map">Karta</a></li>
-        <li><a href="#pie">Odnos zaposelnih po spolu</a></li>
+        <li><a href="#pie">Odnos nezaposelnih po spolu</a></li>
         <li><a href="#place">Plaće po djelatnostima</a></li>
       </ul>
     </nav>
@@ -41,14 +41,15 @@
         <option value="ukupno_zaposleni">Broj zaposlenih</option>
       </select>
     </div>
-    <div><h2>Naziv Županije:</h2></div>
-    <div id="app" class="naziv"></div>
+    <div><h2>Naziv Županije:</h2> <h3 id="app" class="naziv"></h3></div>
     <div class="mapa"></div>
     <div class="legend-container"></div>
   </div>
   <div>
     <div class="legend-bar"></div> 
     <div class="bar-chart"></div>
+    <h3>Odabrana županija</h3>
+      <p id="zup"></p>
   </div>
 </div>
   <script type="text/javascript">
@@ -62,7 +63,6 @@
               .attr("width", 960)
               .attr("height", 700);
 
-    
     var g = svg.select("g");
     g = svg.append("g");
 
@@ -80,12 +80,9 @@
     const selectOption = document.getElementById("dropdown")
     selectOption.addEventListener("change",changeYear)
 
-    
     var defs = svg.append("defs");
     var linearGradient = defs.append("linearGradient")
         .attr("id", "linear-gradient");
-
-    
 
     //Karta 
     function changeYear() {
@@ -94,9 +91,6 @@
       d3.select("#yearOutput").text(year);
       var selectedValue = (selectOption.value).toString()
       
-      
-      
-
       d3.json("trueData.json", function (data) {
         var zupanija = data;
 
@@ -105,39 +99,32 @@
             console.error("Error loading cro_regv3.json:", error);
             return;
           }
-
+          
           var data = topojson.feature(cro, cro.objects.layer1);
-          var myColor1 = d3.scale.linear().domain([1, 30])
+          var myColor1 = d3.scale.linear().domain([1, d3.max(zupanija, function(d) {return d3.max(Object.values(d.stopa));})])
             .range(["royalblue", "crimson"]);
           
-
           var myColor2 = d3.scale.linear().domain([1500, 30000])
             .range(["brown", "cornflowerblue"]);
           
-
           var myColor3 = d3.scale.linear().domain([10, 3000])
             .range(["firebrick", "darkseagreen"]);
           
-
           var myColor4 = d3.scale.linear().domain([950, 15000])
             .range(["darkslateblue", "lightgoldenrodyellow"]);
           
-
           var myColor5 = d3.scale.linear().domain([8000, 90000])
             .range(["indigo", "antiquewhite"]);
           
-
-          var myColor6 = d3.scale.linear().domain([12000, 100000])
+          var myColor6 = d3.scale.linear().domain([1, 100000])
             .range(["steelblue", "darkred"]);
           
-
-          var myColor7 = d3.scale.linear().domain([10000, 90000])
+          var myColor7 = d3.scale.linear().domain([1, 90000])
             .range(["palegreen", "palevioletred"]);
           
           var counties = g.selectAll("path.county")
             .data(data.features);
 
-          
           counties.enter().append("path")
             .attr("class", "county")
             .attr("id", function (d) { return d.id; })
@@ -148,13 +135,11 @@
             .on("click", function(d) {
               d3.select(".bar-chart").selectAll("*").remove();   
               createBar(d.id, zupanija); 
+              d3.select("#zup").text(d.properties.name);
             })
             .on("mouseover", function (d) {
               d3.select("#app").text(d.properties.name);
             });
-            
-
-          
             
           if(selectedValue == "stopa") {
             counties
@@ -166,7 +151,7 @@
                 const stopaValue = zupanija.find(x => x.id == countyID).stopa[yearString];
                 return stopaValue ? myColor1(stopaValue) : "lightgray"; 
               });
-              changeLegendColor("royalblue", "crimson", 3 ,36)
+              changeLegendColor("royalblue", "crimson", 3 ,d3.max(zupanija, function(d) {return d3.max(Object.values(d.stopa));}))
           }
           if(selectedValue == "nezaposlenost") {
             counties
@@ -244,8 +229,7 @@
               return stopaValue ? myColor7(stopaValue) : "lightgray"; 
             });
             changeLegendColor("palegreen", "palevioletred", 10000, 90000)
-          }
-          
+          } 
           counties.exit().remove();
         });
       });
@@ -297,11 +281,6 @@
     changeYear();
 
   </script>
-
-
-
-
-    
 
   <script>
     function createBar(id, zupanija) {
@@ -380,7 +359,6 @@
           .style("text-anchor", "end")
           .text("Aktivno stanovništvo")
         
-
       var barchart = svg.selectAll("rect")
           .data(dataa)
           .enter()
@@ -440,38 +418,34 @@
       legendItem2.append("div")
         .text(selectedText);
     }
-
-    
-
   </script>
 
- 
   <div class="pie-chart" id="pie">
-    <div><h1>Odnos zaposelnih po spolu</h1></div>
+    <div><h1>Odnos nezaposelnih po spolu</h1></div>
     <div class="custom-select">
       <select name="dropdown-zup" id="dropdown-zup">
-        <option value="ZG">Zagrebačka županija</option>
-        <option value="VP">Virovitičko - podravska županija</option>
-        <option value="LS">Ličko-senjska županija</option>
-        <option value="KZ">Krapinsko - zagorska županija</option>
-        <option value="SM">Sisačko - moslavačka županija</option>
-        <option value="KA">Karlovačka županija</option>
-        <option value="VZ">Varaždinska županija</option>
-        <option value="KK">Koprivničko - križevačka županija</option>
-        <option value="BB">Bijelovarsko - bilogorska županija</option>
-        <option value="PG">Primorsko - goranska županija</option>
-        <option value="PZ">Požesko-slavonska županija</option>
-        <option value="BP">Brodsko - posavska županija</option>
-        <option value="ZD">Zadarska županija</option>
-        <option value="OB">Osječko - baranjska županija</option>
-        <option value="SK">Šibensko - kninska županija</option>
-        <option value="VS">Vukovasko - srijemska županija</option>
-        <option value="SD">Splitsko - dalmatinska županija</option>
-        <option value="IS">Istarska županija</option>
-        <option value="DN">Dubrovačko - neretvanska županija</option>
-        <option value="ME">Međimurska županija</option>
-        <option value="GZ">Grad Zagreb</option>
         <option value="RH">Republika Hrvatska</option>
+        <option value="BB">Bijelovarsko - bilogorska županija</option>
+        <option value="BP">Brodsko - posavska županija</option>
+        <option value="DN">Dubrovačko - neretvanska županija</option>
+        <option value="GZ">Grad Zagreb</option>
+        <option value="IS">Istarska županija</option>
+        <option value="KA">Karlovačka županija</option>
+        <option value="KK">Koprivničko - križevačka županija</option>
+        <option value="KZ">Krapinsko - zagorska županija</option>
+        <option value="LS">Ličko-senjska županija</option>
+        <option value="ME">Međimurska županija</option>
+        <option value="OB">Osječko - baranjska županija</option>
+        <option value="PZ">Požesko-slavonska županija</option>
+        <option value="PG">Primorsko - goranska županija</option>
+        <option value="SM">Sisačko - moslavačka županija</option>
+        <option value="SD">Splitsko - dalmatinska županija</option>
+        <option value="SK">Šibensko - kninska županija</option>
+        <option value="VZ">Varaždinska županija</option>
+        <option value="VP">Virovitičko - podravska županija</option>
+        <option value="VS">Vukovasko - srijemska županija</option>
+        <option value="ZD">Zadarska županija</option>
+        <option value="ZG">Zagrebačka županija</option>
       </select>
     </div>
 
@@ -490,29 +464,23 @@
 
   <script>
 
-      
     const selectZup = document.getElementById("dropdown-zup")
     selectZup.addEventListener("change", function() {
-      d3.select(".piechart").selectAll("*").remove();  
       createPieChart()
-
     })
 
     const selectGod = document.getElementById("dropdown-god")
     selectGod.addEventListener("change",function() {
-      d3.select(".piechart").selectAll("*").remove();  
       createPieChart()
-
     })
-
 
     createPieChart();
 
     var width = 700;
     var height = 700;
   
-    
     function createPieChart() {
+      d3.select(".piechart").selectAll("*").remove();  
         var selVal = selectZup.value.toString();
         var selGod = selectGod.value.toString();
         var maleString = `${selGod}MALE`;
@@ -522,7 +490,7 @@
           .outerRadius(200)
           .innerRadius(0);
 
-        var color = d3.scale.category20().range(["#5AB2FF", "#AD88C6", "#B5C18E"]);
+        var color = d3.scale.category20().range(["#5AB2FF", "#AD88C6"]);
 
         d3.json("trueData.json", function(error, data) {
           if (error) throw error;
@@ -579,70 +547,64 @@
             var legend = d3.select(".legend-chart").selectAll('.legend')
             .data(combinedData);
 
-        var legendChar = d3.select(".legend-char");
-          legendChar.html("");
+          var legendChar = d3.select(".legend-char");
+            legendChar.html("");
 
-      var legend1 = legendChar.append("div")
-        .style("display", "flex")
-        .style("align-items", "center");
+          var legend1 = legendChar.append("div")
+            .style("display", "flex")
+            .style("align-items", "center");
 
-      legend1.append("div")
-        .style("width", "18px")
-        .style("height", "18px")
-        .style("background-color", "#5AB2FF")
-        .style("margin-right", "8px");
+          legend1.append("div")
+            .style("width", "18px")
+            .style("height", "18px")
+            .style("background-color", "#5AB2FF")
+            .style("margin-right", "8px");
 
-      legend1.append("div")
-        .text("Muški");
+          legend1.append("div")
+            .text("Muški");
 
-      var legend2 = legendChar.append("div")
-        .style("display", "flex")
-        .style("align-items", "center")
-        .style("margin-top", "8px");
+          var legend2 = legendChar.append("div")
+            .style("display", "flex")
+            .style("align-items", "center")
+            .style("margin-top", "8px");
 
-      legend2.append("div")
-        .style("width", "18px")
-        .style("height", "18px")
-        .style("background-color", "#AD88C6")
-        .style("margin-right", "8px");
+          legend2.append("div")
+            .style("width", "18px")
+            .style("height", "18px")
+            .style("background-color", "#AD88C6")
+            .style("margin-right", "8px");
 
-      legend2.append("div")
-        .text("Ženski");
-        
-        
-
-            
+          legend2.append("div")
+            .text("Ženski");   
         });
     }
-
-
   </script>
 
   <div class="custom-select">
     <div id="place"><h1>Plaće po djelatnostima</h1></div>
     <select name="dropdown-zupanija" id="dropdown-zupanija">
-      <option value="ZG">Zagrebačka županija</option>
-      <option value="VP">Virovitičko - podravska županija</option>
-      <option value="LS">Ličko-senjska županija</option>
-      <option value="KZ">Krapinsko - zagorska županija</option>
-      <option value="SM">Sisačko - moslavačka županija</option>
-      <option value="KA">Karlovačka županija</option>
-      <option value="VZ">Varaždinska županija</option>
-      <option value="KK">Koprivničko - križevačka županija</option>
-      <option value="BB">Bijelovarsko - bilogorska županija</option>
-      <option value="PG">Primorsko - goranska županija</option>
-      <option value="PZ">Požesko-slavonska županija</option>
-      <option value="BP">Brodsko - posavska županija</option>
-      <option value="ZD">Zadarska županija</option>
-      <option value="OB">Osječko - baranjska županija</option>
-      <option value="SK">Šibensko - kninska županija</option>
-      <option value="VS">Vukovasko - srijemska županija</option>
-      <option value="SD">Splitsko - dalmatinska županija</option>
-      <option value="IS">Istarska županija</option>
-      <option value="DN">Dubrovačko - neretvanska županija</option>
-      <option value="ME">Međimurska županija</option>
-      <option value="GZ">Grad Zagreb</option>
       <option value="RH">Republika Hrvatska</option>
+      <option value="BB">Bijelovarsko - bilogorska županija</option>
+      <option value="BP">Brodsko - posavska županija</option>
+      <option value="DN">Dubrovačko - neretvanska županija</option>
+      <option value="GZ">Grad Zagreb</option>
+      <option value="IS">Istarska županija</option>
+      <option value="KA">Karlovačka županija</option>
+      <option value="KK">Koprivničko - križevačka županija</option>
+      <option value="KZ">Krapinsko - zagorska županija</option>
+      <option value="LS">Ličko-senjska županija</option>
+      <option value="ME">Međimurska županija</option>
+      <option value="OB">Osječko - baranjska županija</option>
+      <option value="PZ">Požesko-slavonska županija</option>
+      <option value="PG">Primorsko - goranska županija</option>
+      <option value="SM">Sisačko - moslavačka županija</option>
+      <option value="SD">Splitsko - dalmatinska županija</option>
+      <option value="SK">Šibensko - kninska županija</option>
+      <option value="VZ">Varaždinska županija</option>
+      <option value="VP">Virovitičko - podravska županija</option>
+      <option value="VS">Vukovasko - srijemska županija</option>
+      <option value="ZD">Zadarska županija</option>
+      <option value="ZG">Zagrebačka županija</option>
     </select>
   </div>
   <button class="djelatnosti" data-value="0" style="background-color:  #dfa837;">Ukupno</button>
@@ -669,7 +631,6 @@
   <div class = "line-graph">
     
   </div>
-
   <script>
 
     const selectZupanija = document.getElementById("dropdown-zupanija")
@@ -682,12 +643,11 @@
     button.addEventListener('click', function() {
       var selectDijelatnost = button.getAttribute('data-value');
       const selectedColor = button.style.backgroundColor;
+      svg.selectAll("*").remove(); 
         createLine(selectDijelatnost, selectedColor);
     });
 });
     
-
-
     var margin = { top: 30, bottom: 80, left: 70, right: 20 };
     var width = 1000 - margin.left - margin.right;
     var height = 600 - margin.top - margin.bottom;
@@ -701,9 +661,7 @@
 
     function createLine(selectedDijelatnost, color) {
       var selectedValue = (selectZupanija.value).toString()
-      console.log(selectedDijelatnost)
       svg.selectAll("text.label").remove();
-
 
     d3.json("trueData.json", function(error, data) {
         if (error) throw error;
@@ -715,16 +673,14 @@
         var godinaZaPrikaz = (`202${i}`);
         var partData = (data.find(x => x.id == selectedValue).placa_prema_dijelatnostima[selectedDijelatnost]) 
         lineData.push({godine: godinaZaPrikaz, data :partData[godinaPretraga]})
-        
       }
 
       var forLinedata = lineData.map(function(d){return d.data})
       var godine = lineData.map(function(d) {return d.godine})
       
-
       var x = d3.scale.ordinal()
         .domain(godine)
-        .rangePoints([20, width])
+        .rangePoints([0, width])
 
       var y = d3.scale.linear()
         .domain([0,3000])
@@ -734,13 +690,10 @@
           .scale(x)
           .orient("bottom")
           
-          
-
       var yAxis = d3.svg.axis()
           .scale(y)
           .orient("left")
           .ticks(10);
-
 
       svg.append("g")
           .attr("class", "x axis")
@@ -762,7 +715,7 @@
         .attr("y", 6)
         .attr("dy", ".71em")
         .style("text-anchor", "end")
-        .text("Vrijednost");
+        .text("Vrijednost (€)");
 
       var valueline = d3.svg.line()
         .x(function (d, i) { return x(godine[i]); })
@@ -775,14 +728,13 @@
         .style("fill", "none")
         .style("stroke-width", 3)
         
-
       svg.selectAll("dot")
         .data(lineData)
         .enter().append("circle")
-        .attr("r", 5)
+        .attr("r", 3)
         .attr("cx", function(d, i) { return x(d.godine); })
         .attr("cy", function(d) { return y(d.data); })
-        .style("fill", "red");
+        .style("fill", "black");
 
       svg.selectAll("text.label")
         .data(lineData)
@@ -791,20 +743,12 @@
         .attr("x", function(d, i) { return x(d.godine); })
         .attr("y", function(d) { return y(d.data) - 10; }) 
         .style("text-anchor", "middle")
-        .text(function(d) { return d.data; });
-
-      
-      
-      
-
+        .style("fill", "red")
+        .style("font-weight", "bold")
+        .text(function(d) { return d.data; })
     });
   }
-
   createLine()
-
   </script>
-
-
 </body>
-
 </html>
